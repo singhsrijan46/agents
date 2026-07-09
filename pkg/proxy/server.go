@@ -128,14 +128,14 @@ func (s *Server) Run() error {
 	go func() {
 		klog.InfoS("Starting proxy system server", "address", s.httpSrv.Addr)
 		if err := s.httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			klog.Fatalf("HTTP server failed to start: %v", err)
+			klog.ErrorS(err, "HTTP server failed to start")
 		}
 	}()
 
 	go func() {
 		klog.InfoS("Starting proxy gRPC server", "address", lis.Addr())
 		if err := s.grpcSrv.Serve(lis); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
-			klog.Fatalf("gRPC server failed to start: %v", err)
+			klog.ErrorS(err, "gRPC server failed to start")
 		}
 	}()
 

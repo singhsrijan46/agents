@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -33,6 +35,7 @@ import (
 
 	"github.com/openkruise/agents/api/v1alpha1"
 	"github.com/openkruise/agents/pkg/sandbox-manager/config"
+	"github.com/openkruise/agents/pkg/sandbox-manager/consts"
 )
 
 // ---- healthServer tests ----
@@ -137,6 +140,18 @@ func TestHandleRefresh_OverwritesExistingRoute(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, rr.Code)
 	got, _ := s.LoadRoute("sb-over")
 	assert.Equal(t, "2.2.2.2", got.IP)
+}
+
+func TestServer_Run_ReturnsListenerError(t *testing.T) {
+	server := NewServer(config.SandboxManagerOptions{})
+
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", consts.ExtProcPort))
+	require.NoError(t, err)
+	defer listener.Close()
+
+	err = server.Run()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "bind")
 }
 
 func TestServer_handleRefresh(t *testing.T) {
