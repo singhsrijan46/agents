@@ -58,7 +58,7 @@ func TestLegacy(t *testing.T) {
 	}
 }
 
-func TestGenerateShort(t *testing.T) {
+func TestGenerateShortID(t *testing.T) {
 	tests := []struct {
 		name        string
 		uid         types.UID
@@ -87,7 +87,7 @@ func TestGenerateShort(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GenerateShort(tt.uid)
+			got, err := GenerateShortID(tt.uid)
 			if tt.expectError != "" {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectError)
@@ -157,7 +157,7 @@ func TestResolve(t *testing.T) {
 	}
 }
 
-func TestAssignShort(t *testing.T) {
+func TestAssignShortID(t *testing.T) {
 	tests := []struct {
 		name        string
 		sandbox     metav1.Object
@@ -212,7 +212,7 @@ func TestAssignShort(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			changed, err := AssignShort(tt.sandbox)
+			changed, err := AssignShortID(tt.sandbox)
 			if tt.expectError != "" {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectError)

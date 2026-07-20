@@ -49,8 +49,8 @@ func Legacy(namespace, name string) string {
 	return fmt.Sprintf("%s--%s", namespace, name)
 }
 
-// GenerateShort decodes a Kubernetes UID as a 16-byte UUID and encodes it into 26 lowercase Base32 characters.
-func GenerateShort(uid types.UID) (string, error) {
+// GenerateShortID decodes a Kubernetes UID as a 16-byte UUID and encodes it into 26 lowercase Base32 characters.
+func GenerateShortID(uid types.UID) (string, error) {
 	parsedUUID, err := uuid.Parse(string(uid))
 	if err != nil {
 		return "", fmt.Errorf("failed to parse UID as UUID: %w", err)
@@ -65,9 +65,9 @@ func GenerateShort(uid types.UID) (string, error) {
 	return strings.ToLower(encoded), nil
 }
 
-// AssignShort checks if the sandbox already has a sandbox-id label.
+// AssignShortID checks if the sandbox already has a sandbox-id label.
 // If not, generates a short ID from its UID and sets it as the label.
-func AssignShort(sandbox metav1.Object) (changed bool, err error) {
+func AssignShortID(sandbox metav1.Object) (changed bool, err error) {
 	if sandbox == nil {
 		return false, fmt.Errorf("sandbox is nil")
 	}
@@ -78,7 +78,7 @@ func AssignShort(sandbox metav1.Object) (changed bool, err error) {
 	if val, ok := labels[LabelKey]; ok && val != "" {
 		return false, nil
 	}
-	shortID, err := GenerateShort(sandbox.GetUID())
+	shortID, err := GenerateShortID(sandbox.GetUID())
 	if err != nil {
 		return false, err
 	}
