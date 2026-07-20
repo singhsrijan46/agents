@@ -60,6 +60,9 @@ func init() {
 			"so a stopping csi-sidecar can unmount stale volumes during prestop/SIGTERM. Empty disables the behavior.")
 	flag.StringVar(&csiResetSignalFileName, "csi-reset-signal-file", csiResetSignalFileName,
 		"Name of the reset signal file written into --csi-reset-signal-dir before recycle.")
+	flag.StringVar(&checkpointIDAnnotationKey, "checkpoint-id-annotation-key", checkpointIDAnnotationKey,
+		"Annotation key for the checkpoint ID used to restore the pod's writable layer during CheckpointRestore upgrade. "+
+			"If empty, no checkpoint ID annotation is set on pods.")
 }
 
 var (
@@ -70,6 +73,7 @@ var (
 	recycleFailureShutdownGrace = 5 * time.Minute
 	csiResetSignalDir           = ""
 	csiResetSignalFileName      = "reset"
+	checkpointIDAnnotationKey   = ""
 )
 
 const (
@@ -117,6 +121,7 @@ func Add(mgr manager.Manager, metricsCleanup Enqueuer) error {
 	recorder := mgr.GetEventRecorderFor("sandbox")
 	checkpointControl := core.NewCheckpointControl(mgr.GetClient(), recorder)
 	podControl := core.NewPodControl(mgr.GetClient(), recorder, core.GeneratePodFromSandbox)
+	podControl.SetCheckpointIDAnnotationKey(checkpointIDAnnotationKey)
 	err := (&SandboxReconciler{
 		Client:            mgr.GetClient(),
 		Scheme:            mgr.GetScheme(),
@@ -494,7 +499,7 @@ func (r *SandboxReconciler) calculateStatus(ctx context.Context, args core.Ensur
 			newStatus.Phase = agentsv1alpha1.SandboxPaused
 			// Check for upgrade: if template has changed (hash mismatch), transition to Upgrading phase
 		} else if pod != nil && pod.Labels[agentsv1alpha1.PodLabelTemplateHash] != newStatus.UpdateRevision &&
-			box.Spec.UpgradePolicy != nil && box.Spec.UpgradePolicy.Type == agentsv1alpha1.SandboxUpgradePolicyRecreate {
+			core.RequiresPodReplacementUpgrade(box) {
 			klog.InfoS("Detected upgrade trigger", "sandbox", klog.KObj(box),
 				"podRevision", pod.Labels[agentsv1alpha1.PodLabelTemplateHash],
 				"sandboxRevision", newStatus.UpdateRevision)
