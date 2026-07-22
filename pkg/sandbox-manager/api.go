@@ -148,30 +148,47 @@ func (m *SandboxManager) ClaimSandbox(ctx context.Context, opts ClaimSandboxOpti
 	origPostModifier := infraOpts.PostModifier
 	if m.enableShortSandboxID {
 		infraOpts.PostModifier = func(obj metav1.Object) (bool, error) {
-			changed, err := sandboxid.AssignShortID(obj)
-			if err != nil {
-				return false, err
-			}
+			changed := false
 			if origPostModifier != nil {
 				c, err := origPostModifier(obj)
 				if err != nil {
 					return false, err
 				}
-				changed = changed || c
+				changed = c
 			}
-			return changed, nil
+			labels := obj.GetLabels()
+			if labels != nil && labels[v1alpha1.LabelSandboxID] != "" {
+				delete(labels, v1alpha1.LabelSandboxID)
+				changed = true
+			}
+			annos := obj.GetAnnotations()
+			if annos != nil && annos[v1alpha1.AnnotationSandboxID] != "" {
+				delete(annos, v1alpha1.AnnotationSandboxID)
+				changed = true
+			}
+			c, err := sandboxid.AssignShortID(obj)
+			if err != nil {
+				return false, err
+			}
+			return changed || c, nil
 		}
 	} else if origPostModifier != nil {
 		infraOpts.PostModifier = func(obj metav1.Object) (bool, error) {
+			changed, err := origPostModifier(obj)
+			if err != nil {
+				return false, err
+			}
 			labels := obj.GetLabels()
-			if labels != nil {
+			if labels != nil && labels[v1alpha1.LabelSandboxID] != "" {
 				delete(labels, v1alpha1.LabelSandboxID)
+				changed = true
 			}
 			annos := obj.GetAnnotations()
-			if annos != nil {
+			if annos != nil && annos[v1alpha1.AnnotationSandboxID] != "" {
 				delete(annos, v1alpha1.AnnotationSandboxID)
+				changed = true
 			}
-			return origPostModifier(obj)
+			return changed, nil
 		}
 	}
 
@@ -238,30 +255,47 @@ func (m *SandboxManager) CloneSandbox(ctx context.Context, opts CloneSandboxOpti
 	origPostModifier := infraOpts.PostModifier
 	if m.enableShortSandboxID {
 		infraOpts.PostModifier = func(obj metav1.Object) (bool, error) {
-			changed, err := sandboxid.AssignShortID(obj)
-			if err != nil {
-				return false, err
-			}
+			changed := false
 			if origPostModifier != nil {
 				c, err := origPostModifier(obj)
 				if err != nil {
 					return false, err
 				}
-				changed = changed || c
+				changed = c
 			}
-			return changed, nil
+			labels := obj.GetLabels()
+			if labels != nil && labels[v1alpha1.LabelSandboxID] != "" {
+				delete(labels, v1alpha1.LabelSandboxID)
+				changed = true
+			}
+			annos := obj.GetAnnotations()
+			if annos != nil && annos[v1alpha1.AnnotationSandboxID] != "" {
+				delete(annos, v1alpha1.AnnotationSandboxID)
+				changed = true
+			}
+			c, err := sandboxid.AssignShortID(obj)
+			if err != nil {
+				return false, err
+			}
+			return changed || c, nil
 		}
 	} else if origPostModifier != nil {
 		infraOpts.PostModifier = func(obj metav1.Object) (bool, error) {
+			changed, err := origPostModifier(obj)
+			if err != nil {
+				return false, err
+			}
 			labels := obj.GetLabels()
-			if labels != nil {
+			if labels != nil && labels[v1alpha1.LabelSandboxID] != "" {
 				delete(labels, v1alpha1.LabelSandboxID)
+				changed = true
 			}
 			annos := obj.GetAnnotations()
-			if annos != nil {
+			if annos != nil && annos[v1alpha1.AnnotationSandboxID] != "" {
 				delete(annos, v1alpha1.AnnotationSandboxID)
+				changed = true
 			}
-			return origPostModifier(obj)
+			return changed, nil
 		}
 	}
 

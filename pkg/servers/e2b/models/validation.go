@@ -39,6 +39,10 @@ func validateMountPoint(mountPoint string) error {
 		return fmt.Errorf("mount point contains invalid '..' path element")
 	}
 
+	if strings.Contains(mountPoint, "\\") {
+		return fmt.Errorf("mount point contains invalid backslash characters")
+	}
+
 	// to parse the path, eliminating relative path symbols such as "." and ".."
 	cleanPath := path.Clean(mountPoint)
 	if cleanPath != mountPoint {

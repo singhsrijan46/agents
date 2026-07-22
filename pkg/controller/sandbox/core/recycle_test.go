@@ -1230,7 +1230,7 @@ func TestResetForPool(t *testing.T) {
 			expectError: "failed to unmarshal updated-metadata-in-claim",
 		},
 		{
-			name: "removes LabelSandboxID during recycle",
+			name: "preserves LabelSandboxID during recycle",
 			box: &agentsv1alpha1.Sandbox{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-sandbox",
@@ -1260,6 +1260,7 @@ func TestResetForPool(t *testing.T) {
 			expectLabels: map[string]string{
 				agentsv1alpha1.LabelSandboxPool:      "test-pool",
 				agentsv1alpha1.LabelSandboxIsClaimed: agentsv1alpha1.False,
+				agentsv1alpha1.LabelSandboxID:        "my-short-id",
 			},
 		},
 	}

@@ -409,7 +409,6 @@ func (r *SandboxRecycleControl) resetMetadataForPool(ctx context.Context, box *a
 	}
 	box.Labels[agentsv1alpha1.LabelSandboxIsClaimed] = agentsv1alpha1.False
 	delete(box.Labels, agentsv1alpha1.LabelSandboxClaimName)
-	delete(box.Labels, agentsv1alpha1.LabelSandboxID)
 	for _, ann := range agentsv1alpha1.AnnotationsClearedOnRecycle {
 		delete(box.Annotations, ann)
 	}
@@ -424,7 +423,9 @@ func (r *SandboxRecycleControl) resetMetadataForPool(ctx context.Context, box *a
 			return fmt.Errorf("failed to unmarshal updated-metadata-in-claim: %w", err)
 		}
 		for _, key := range updated.Labels {
-			delete(box.Labels, key)
+			if key != agentsv1alpha1.LabelSandboxID {
+				delete(box.Labels, key)
+			}
 		}
 		for _, key := range updated.Annotations {
 			delete(box.Annotations, key)
