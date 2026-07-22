@@ -131,6 +131,9 @@ func (m *SandboxManager) ClaimSandbox(ctx context.Context, opts ClaimSandboxOpti
 	// Guard user-supplied modifier against editing reserved sandbox-id labels/annotations
 	origModifier := infraOpts.Modifier
 	infraOpts.Modifier = func(s infra.Sandbox) {
+		if origModifier != nil {
+			origModifier(s)
+		}
 		labels := s.GetLabels()
 		if labels != nil {
 			delete(labels, v1alpha1.LabelSandboxID)
@@ -138,9 +141,6 @@ func (m *SandboxManager) ClaimSandbox(ctx context.Context, opts ClaimSandboxOpti
 		annos := s.GetAnnotations()
 		if annos != nil {
 			delete(annos, v1alpha1.AnnotationSandboxID)
-		}
-		if origModifier != nil {
-			origModifier(s)
 		}
 	}
 
@@ -221,6 +221,9 @@ func (m *SandboxManager) CloneSandbox(ctx context.Context, opts CloneSandboxOpti
 	// Guard user-supplied modifier against editing reserved sandbox-id labels/annotations
 	origModifier := infraOpts.Modifier
 	infraOpts.Modifier = func(s infra.Sandbox) {
+		if origModifier != nil {
+			origModifier(s)
+		}
 		labels := s.GetLabels()
 		if labels != nil {
 			delete(labels, v1alpha1.LabelSandboxID)
@@ -228,9 +231,6 @@ func (m *SandboxManager) CloneSandbox(ctx context.Context, opts CloneSandboxOpti
 		annos := s.GetAnnotations()
 		if annos != nil {
 			delete(annos, v1alpha1.AnnotationSandboxID)
-		}
-		if origModifier != nil {
-			origModifier(s)
 		}
 	}
 

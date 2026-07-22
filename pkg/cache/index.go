@@ -21,6 +21,7 @@ import (
 
 	"github.com/openkruise/agents/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrlcache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -37,7 +38,7 @@ var (
 	IndexVolumeName       = "volumeName"
 
 	// SandboxIDResolver resolves a sandbox's ID, injected from the composition root.
-	SandboxIDResolver func(client.Object) string
+	SandboxIDResolver func(metav1.Object) string
 )
 
 // IndexFunc defines a field index function for a specific resource type.

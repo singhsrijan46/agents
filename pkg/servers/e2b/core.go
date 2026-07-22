@@ -40,7 +40,6 @@ import (
 )
 
 // Controller handles sandbox-related operations
-// Controller handles sandbox-related operations
 type Controller struct {
 	port                  int
 	maxTimeout            int
