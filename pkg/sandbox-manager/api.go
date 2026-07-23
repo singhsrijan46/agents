@@ -117,6 +117,58 @@ func preserveTypedError(err error, contextMsg string) error {
 	return managererrors.NewError(managererrors.ErrorInternal, "%s: %v", contextMsg, err)
 }
 
+// composePostModifier builds a unified post-modifier for the sandbox claim or clone operations,
+// handling short sandbox ID assignment and cleanup of obsolete labels/annotations.
+func (m *SandboxManager) composePostModifier(origPostModifier func(metav1.Object) (bool, error)) func(metav1.Object) (bool, error) {
+	if m.enableShortSandboxID {
+		return func(obj metav1.Object) (bool, error) {
+			changed := false
+			if origPostModifier != nil {
+				c, err := origPostModifier(obj)
+				if err != nil {
+					return false, err
+				}
+				changed = c
+			}
+			labels := obj.GetLabels()
+			if labels != nil && labels[v1alpha1.LabelSandboxID] != "" {
+				delete(labels, v1alpha1.LabelSandboxID)
+				changed = true
+			}
+			annos := obj.GetAnnotations()
+			if annos != nil && annos[v1alpha1.AnnotationSandboxID] != "" {
+				delete(annos, v1alpha1.AnnotationSandboxID)
+				changed = true
+			}
+			c, err := sandboxid.AssignShortID(obj)
+			if err != nil {
+				return false, err
+			}
+			return changed || c, nil
+		}
+	}
+	if origPostModifier != nil {
+		return func(obj metav1.Object) (bool, error) {
+			changed, err := origPostModifier(obj)
+			if err != nil {
+				return false, err
+			}
+			labels := obj.GetLabels()
+			if labels != nil && labels[v1alpha1.LabelSandboxID] != "" {
+				delete(labels, v1alpha1.LabelSandboxID)
+				changed = true
+			}
+			annos := obj.GetAnnotations()
+			if annos != nil && annos[v1alpha1.AnnotationSandboxID] != "" {
+				delete(annos, v1alpha1.AnnotationSandboxID)
+				changed = true
+			}
+			return changed, nil
+		}
+	}
+	return nil
+}
+
 // ClaimSandbox attempts to lock a Pod and assign it to the current caller.
 //
 // Two counters are recorded on failure paths and they have distinct semantics
@@ -145,52 +197,7 @@ func (m *SandboxManager) ClaimSandbox(ctx context.Context, opts ClaimSandboxOpti
 	}
 
 	// Compose post-modifier
-	origPostModifier := infraOpts.PostModifier
-	if m.enableShortSandboxID {
-		infraOpts.PostModifier = func(obj metav1.Object) (bool, error) {
-			changed := false
-			if origPostModifier != nil {
-				c, err := origPostModifier(obj)
-				if err != nil {
-					return false, err
-				}
-				changed = c
-			}
-			labels := obj.GetLabels()
-			if labels != nil && labels[v1alpha1.LabelSandboxID] != "" {
-				delete(labels, v1alpha1.LabelSandboxID)
-				changed = true
-			}
-			annos := obj.GetAnnotations()
-			if annos != nil && annos[v1alpha1.AnnotationSandboxID] != "" {
-				delete(annos, v1alpha1.AnnotationSandboxID)
-				changed = true
-			}
-			c, err := sandboxid.AssignShortID(obj)
-			if err != nil {
-				return false, err
-			}
-			return changed || c, nil
-		}
-	} else if origPostModifier != nil {
-		infraOpts.PostModifier = func(obj metav1.Object) (bool, error) {
-			changed, err := origPostModifier(obj)
-			if err != nil {
-				return false, err
-			}
-			labels := obj.GetLabels()
-			if labels != nil && labels[v1alpha1.LabelSandboxID] != "" {
-				delete(labels, v1alpha1.LabelSandboxID)
-				changed = true
-			}
-			annos := obj.GetAnnotations()
-			if annos != nil && annos[v1alpha1.AnnotationSandboxID] != "" {
-				delete(annos, v1alpha1.AnnotationSandboxID)
-				changed = true
-			}
-			return changed, nil
-		}
-	}
+	infraOpts.PostModifier = m.composePostModifier(infraOpts.PostModifier)
 
 	if !m.infra.HasTemplate(ctx, infra.HasTemplateOptions{Namespace: infraOpts.Namespace, Name: infraOpts.Template}) {
 		// Template lookup failed before any sandbox was picked, so lock_type is unknown.
@@ -252,52 +259,7 @@ func (m *SandboxManager) CloneSandbox(ctx context.Context, opts CloneSandboxOpti
 	}
 
 	// Compose post-modifier
-	origPostModifier := infraOpts.PostModifier
-	if m.enableShortSandboxID {
-		infraOpts.PostModifier = func(obj metav1.Object) (bool, error) {
-			changed := false
-			if origPostModifier != nil {
-				c, err := origPostModifier(obj)
-				if err != nil {
-					return false, err
-				}
-				changed = c
-			}
-			labels := obj.GetLabels()
-			if labels != nil && labels[v1alpha1.LabelSandboxID] != "" {
-				delete(labels, v1alpha1.LabelSandboxID)
-				changed = true
-			}
-			annos := obj.GetAnnotations()
-			if annos != nil && annos[v1alpha1.AnnotationSandboxID] != "" {
-				delete(annos, v1alpha1.AnnotationSandboxID)
-				changed = true
-			}
-			c, err := sandboxid.AssignShortID(obj)
-			if err != nil {
-				return false, err
-			}
-			return changed || c, nil
-		}
-	} else if origPostModifier != nil {
-		infraOpts.PostModifier = func(obj metav1.Object) (bool, error) {
-			changed, err := origPostModifier(obj)
-			if err != nil {
-				return false, err
-			}
-			labels := obj.GetLabels()
-			if labels != nil && labels[v1alpha1.LabelSandboxID] != "" {
-				delete(labels, v1alpha1.LabelSandboxID)
-				changed = true
-			}
-			annos := obj.GetAnnotations()
-			if annos != nil && annos[v1alpha1.AnnotationSandboxID] != "" {
-				delete(annos, v1alpha1.AnnotationSandboxID)
-				changed = true
-			}
-			return changed, nil
-		}
-	}
+	infraOpts.PostModifier = m.composePostModifier(infraOpts.PostModifier)
 
 	sandbox, cloneMetrics, err := m.infra.CloneSandbox(ctx, infraOpts)
 	if err != nil {
